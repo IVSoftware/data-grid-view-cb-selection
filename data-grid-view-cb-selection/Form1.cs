@@ -67,9 +67,8 @@ namespace data_grid_view_cb_selection
                 BeginInvoke((MethodInvoker)delegate
                 {
                     dgv.EndEdit();
-                    if(sender is ComboBox cb)
+                    if (sender is ComboBox cb && cb.SelectedItem is MyProduct product)
                     {
-                        MyProduct product = ProductDefinitions[cb.SelectedIndex];
                         blDatasource[dgv.CurrentCell.RowIndex].Price = product.Price;
                     }
                 });
