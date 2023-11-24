@@ -23,7 +23,6 @@ namespace data_grid_view_cb_selection
         }
 
         #region Windows Form Designer generated code
-
         /// <summary>
         ///  Required method for Designer support - do not modify
         ///  the contents of this method with the code editor.
@@ -34,10 +33,10 @@ namespace data_grid_view_cb_selection
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
             this.Text = "Form1";
-            dataGridView1 = new DataGridView { BackgroundColor = Color.Azure };
             // 
             // dataGridView1
             // 
+            dataGridView1 = new DataGridView { BackgroundColor = Color.Azure };
             dataGridView1.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             dataGridView1.Dock = DockStyle.Fill;
             dataGridView1.Location = new Point(0, 0);
@@ -47,7 +46,7 @@ namespace data_grid_view_cb_selection
             this.Padding = new Padding(10);
             this.Controls.Add(dataGridView1);
         }
-
+        private DataGridView dataGridView1;
         #endregion
     }
 }
