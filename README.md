@@ -1,6 +1,5 @@
 # DataGridView ComboBox Selection
-
-One issue in `dataGridView1_EditingControlShowing` is that you `+=` the event every time it's shown without `-=` first, so make sure there's only one event subscribed at a time. But the main "clue" to what you say about the item "reverting" seems to be that (when I run your code) the DGV is still in Edit mode after the selecting the new value in the ComboBox.
+One issue in `dataGridView1_EditingControlShowing` is that you `+=` the event every time it's shown without `-=` first, so make sure there's only one event subscribed at a time. But the main "clue" to what you say about the item "reverting" seems to be that (when I run your code) the DGV is still in Edit mode after selecting the new value in the ComboBox.
 
 [![stuck in edit][1]][1]
 
@@ -19,6 +18,11 @@ private void dataGridView1_EditingControlShowing(object? sender, DataGridViewEdi
         BeginInvoke((MethodInvoker)delegate
         {
             dgv.EndEdit();
+            if(sender is ComboBox cb)
+            {
+                MyProduct product = ProductDefinitions[cb.SelectedIndex];
+                blDatasource[dgv.CurrentCell.RowIndex].Price = product.Price;
+            }
         });
     }
 }
@@ -34,34 +38,34 @@ Here's a reference for setting up `DataGridView` properly and implementing `INot
 ```
 public partial class Form1 : Form
 {
-    Dictionary<ProductType, MyProduct> ProductDefinitions;
+    List<MyProduct> ProductDefinitions;
     private DataGridView dataGridView1;
     public Form1() => InitializeComponent();
     protected override void OnLoad(EventArgs e)
     {
         base.OnLoad(e);
-        ProductDefinitions = new Dictionary<ProductType, MyProduct>
+        ProductDefinitions = new List<MyProduct>
         {
-            { ProductType.CPU, new MyProduct{ Id = 0, Name = nameof(ProductType.CPU), Price = 660.0 }},
-            { ProductType.Monitor, new MyProduct{ Id = 1, Name = nameof(ProductType.Monitor), Price = 150.0 }},
-            { ProductType.Mouse, new MyProduct { Id = 2, Name = nameof(ProductType.Mouse), Price = 5.0 }},
+            new MyProduct{ Id = 0, Name = ProductType.CPU, Price = 660.0 },
+            new MyProduct{ Id = 1, Name = ProductType.Monitor, Price = 150.0 },
+            new MyProduct { Id = 2, Name = ProductType.Mouse, Price = 5.0 },
         };
         blDatasource = new BindingList<MyClass>
         {
-            new MyClass{ 
-                Id = 0, 
+            new MyClass{
+                Id = 0,
                 ProductId = ProductType.CPU,
-                Price = ProductDefinitions[ProductType.CPU].Price,
+                Price = ProductDefinitions.First(_=>_.Name.Equals(ProductType.CPU)).Price,
                 Quantity = 1 },
-            new MyClass{ 
+            new MyClass{
                 Id = 1,
                 ProductId = ProductType.Monitor,
-                Price = ProductDefinitions[ProductType.Monitor].Price,
+                Price = ProductDefinitions.First(_=>_.Name.Equals(ProductType.Monitor)).Price,
                 Quantity = 1 },
-            new MyClass{ 
-                Id = 2, 
+            new MyClass{
+                Id = 2,
                 ProductId = ProductType.Mouse,
-                Price = ProductDefinitions[ProductType.Mouse].Price,
+                Price = ProductDefinitions.First(_=>_.Name.Equals(ProductType.Mouse)).Price,
                 Quantity = 1 },
         };
         dataGridView1.AutoGenerateColumns = true; // HIGHLY recommended
@@ -75,36 +79,10 @@ public partial class Form1 : Form
         int swapIndex = oldColumn.Index;
         dataGridView1.Columns.RemoveAt(swapIndex);
         dataGridView1.Columns.Insert(swapIndex, cbColumn);
-        cbColumn.DataSource = Enum.GetValues(typeof(ProductType));
+        cbColumn.DataSource = ProductDefinitions;
+        cbColumn.DisplayMember = "Name";
         cbColumn.DataPropertyName = nameof(MyClass.ProductId);
-
-        dataGridView1.CellValueChanged += (sender, e) =>
-        {
-            if (dataGridView1.Columns[nameof(MyClass.ProductId)].Index == e.ColumnIndex)
-            {
-                dataGridView1.EndEdit();
-            }
-        };
-        blDatasource.ListChanged += (sender, e) =>
-        {
-            switch (e.ListChangedType)
-            {
-                case ListChangedType.ItemChanged:
-                    switch (e.PropertyDescriptor?.Name)
-                    {
-                        case nameof(MyClass.ProductId):
-                            MyClass item = blDatasource[e.NewIndex];
-                            var def = ProductDefinitions[item.ProductId];
-                            item.Price = def.Price;
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                default:
-                    break;
-            }
-        };
+        dataGridView1.EditingControlShowing += dataGridView1_EditingControlShowing;
     }
     BindingList<MyClass> blDatasource;
 }
@@ -113,6 +91,12 @@ public partial class Form1 : Form
 **MyClass**
 
 ```
+public enum ProductType
+{
+    CPU,
+    Monitor,
+    Mouse,
+}
 [DebuggerDisplay("{Id} {ProductId}")]
 public class MyClass : INotifyPropertyChanged
 {
@@ -142,7 +126,6 @@ public class MyClass : INotifyPropertyChanged
         }
     }
     ProductType _productId = default;
-
     public double Price
     {
         get => _price;
@@ -156,7 +139,6 @@ public class MyClass : INotifyPropertyChanged
         }
     }
     double _price = default;
-
     public int Quantity
     {
         get => _quantity;
@@ -170,7 +152,6 @@ public class MyClass : INotifyPropertyChanged
         }
     }
     int _quantity = default;
-
     public double Total
     {
         get => _total;
@@ -184,16 +165,15 @@ public class MyClass : INotifyPropertyChanged
         }
     }
     double _total = default;
-
     private void OnPropertyChanged([CallerMemberName]string? propertyName = null)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         Total = Price * Quantity;
     }
-
     public event PropertyChangedEventHandler? PropertyChanged;
 }
 ```
 
+
   [1]: https://i.stack.imgur.com/oDodE.png
-  [2]: https://i.stack.imgur.com/xtaug.png
+  [2]: https://i.stack.imgur.com/NwUr2.png
