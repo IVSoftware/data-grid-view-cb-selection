@@ -8,34 +8,34 @@ namespace data_grid_view_cb_selection
 {
     public partial class Form1 : Form
     {
-        Dictionary<ProductType, MyProduct> ProductDefinitions;
+        List<MyProduct> ProductDefinitions;
         private DataGridView dataGridView1;
         public Form1() => InitializeComponent();
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
-            ProductDefinitions = new Dictionary<ProductType, MyProduct>
+            ProductDefinitions = new List<MyProduct>
             {
-                { ProductType.CPU, new MyProduct{ Id = 0, Name = nameof(ProductType.CPU), Price = 660.0 }},
-                { ProductType.Monitor, new MyProduct{ Id = 1, Name = nameof(ProductType.Monitor), Price = 150.0 }},
-                { ProductType.Mouse, new MyProduct { Id = 2, Name = nameof(ProductType.Mouse), Price = 5.0 }},
+                new MyProduct{ Id = 0, Name = ProductType.CPU, Price = 660.0 },
+                new MyProduct{ Id = 1, Name = ProductType.Monitor, Price = 150.0 },
+                new MyProduct { Id = 2, Name = ProductType.Mouse, Price = 5.0 },
             };
             blDatasource = new BindingList<MyClass>
             {
-                new MyClass{ 
-                    Id = 0, 
+                new MyClass{
+                    Id = 0,
                     ProductId = ProductType.CPU,
-                    Price = ProductDefinitions[ProductType.CPU].Price,
+                    Price = ProductDefinitions.First(_=>_.Name.Equals(ProductType.CPU)).Price,
                     Quantity = 1 },
-                new MyClass{ 
+                new MyClass{
                     Id = 1,
                     ProductId = ProductType.Monitor,
-                    Price = ProductDefinitions[ProductType.Monitor].Price,
+                    Price = ProductDefinitions.First(_=>_.Name.Equals(ProductType.Monitor)).Price,
                     Quantity = 1 },
-                new MyClass{ 
-                    Id = 2, 
+                new MyClass{
+                    Id = 2,
                     ProductId = ProductType.Mouse,
-                    Price = ProductDefinitions[ProductType.Mouse].Price,
+                    Price = ProductDefinitions.First(_=>_.Name.Equals(ProductType.Mouse)).Price,
                     Quantity = 1 },
             };
             dataGridView1.AutoGenerateColumns = true; // HIGHLY recommended
@@ -49,30 +49,10 @@ namespace data_grid_view_cb_selection
             int swapIndex = oldColumn.Index;
             dataGridView1.Columns.RemoveAt(swapIndex);
             dataGridView1.Columns.Insert(swapIndex, cbColumn);
-            cbColumn.DataSource = Enum.GetValues(typeof(ProductType));
+            cbColumn.DataSource = ProductDefinitions;
+            cbColumn.DisplayMember = "Name";
             cbColumn.DataPropertyName = nameof(MyClass.ProductId);
-
             dataGridView1.EditingControlShowing += dataGridView1_EditingControlShowing;
-            blDatasource.ListChanged += (sender, e) =>
-            {
-                switch (e.ListChangedType)
-                {
-                    case ListChangedType.ItemChanged:
-                        switch (e.PropertyDescriptor?.Name)
-                        {
-                            case nameof(MyClass.ProductId):
-                                MyClass item = blDatasource[e.NewIndex];
-                                var def = ProductDefinitions[item.ProductId];
-                                item.Price = def.Price;
-                                break;
-                            default:
-                                break;
-                        }
-                        break;
-                    default:
-                        break;
-                }
-            };
         }
         BindingList<MyClass> blDatasource;
 
@@ -83,19 +63,16 @@ namespace data_grid_view_cb_selection
                 cb.SelectionChangeCommitted -= localOnSelectionChangeCommitted;
                 cb.SelectionChangeCommitted += localOnSelectionChangeCommitted;
             }
-
             void localOnSelectionChangeCommitted(object? sender, EventArgs e)
             {
                 BeginInvoke((MethodInvoker)delegate
                 {
                     dgv.EndEdit();
-#if DEBUG
-                    // Verify that all the bindings did what they should.
-                    var item = blDatasource[dgv.CurrentCell.RowIndex];
-                    Debug.WriteLine($"ComboBox value: {cb.Text}");
-                    Debug.WriteLine($"Item value    : {item.ProductId}");
-                    Debug.Assert(cb.SelectedItem.Equals(item.ProductId));
-#endif
+                    if(sender is ComboBox cb)
+                    {
+                        MyProduct product = ProductDefinitions[cb.SelectedIndex];
+                        blDatasource[dgv.CurrentCell.RowIndex].Price = product.Price;
+                    }
                 });
             }
         }
@@ -185,7 +162,6 @@ namespace data_grid_view_cb_selection
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
             Total = Price * Quantity;
         }
-
         public event PropertyChangedEventHandler? PropertyChanged;
     }
 
@@ -194,7 +170,7 @@ namespace data_grid_view_cb_selection
     public class MyProduct
     {
         public int Id { get; set; }
-        public string? Name { get; set; }
+        public ProductType Name { get; set; }
         public double Price { get; set; }
     }
 }
