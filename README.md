@@ -39,7 +39,6 @@ Here's a reference for setting up `DataGridView` properly and implementing `INot
 public partial class Form1 : Form
 {
     List<MyProduct> ProductDefinitions;
-    private DataGridView dataGridView1;
     public Form1() => InitializeComponent();
     protected override void OnLoad(EventArgs e)
     {
